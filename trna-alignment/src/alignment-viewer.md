@@ -6,42 +6,129 @@ title: Alignment Viewer
 
 ```js
 const jsons = [
-    FileAttachment("data/alignments/pyrFur2-manual.json"),
-    FileAttachment("data/alignments/pyrFur2-clustal-omega.json"),
-    FileAttachment("data/alignments/pyrFur2-mafft.json"),
-    FileAttachment("data/alignments/pyrFur2-mafft-kimura.json")
+    {
+        "species" : "Pyrococcus furiosus",
+        "files" : [
+            {
+                "alignment" : FileAttachment("data/alignments/Pyrococcus-furiosus/pyrFur2-manual.json"),
+                "splits" : FileAttachment("data/alignments/Pyrococcus-furiosus/pyrFur2-manual.splits.json")
+            },
+            {
+                "alignment" : FileAttachment("data/alignments/Pyrococcus-furiosus/pyrFur2-clustal-omega.json"),
+                "splits" : FileAttachment("data/alignments/Pyrococcus-furiosus/pyrFur2-clustal-omega.splits.json")
+            },
+            {
+                "alignment" : FileAttachment("data/alignments/Pyrococcus-furiosus/pyrFur2-mafft.json"),
+                "splits" : FileAttachment("data/alignments/Pyrococcus-furiosus/pyrFur2-mafft.splits.json")
+            },
+            {
+                "alignment" : FileAttachment("data/alignments/Pyrococcus-furiosus/pyrFur2-mafft-kimura.json"),
+                "splits" : FileAttachment("data/alignments/Pyrococcus-furiosus/pyrFur2-mafft-kimura.splits.json")
+            }
+        ]
+    },
+    {
+        "species" : "Haloferax volcanii",
+        "files" : [
+            {
+                "alignment" : FileAttachment("data/alignments/Haloferax-volcanii/haloVolc1-clustal-omega.json"),
+                "splits" : FileAttachment("data/alignments/Haloferax-volcanii/haloVolc1-clustal-omega.splits.json")
+            },
+            {
+                "alignment" : FileAttachment("data/alignments/Haloferax-volcanii/haloVolc1-mafft.json"),
+                "splits" : FileAttachment("data/alignments/Haloferax-volcanii/haloVolc1-mafft.splits.json")
+            },
+            {
+                "alignment" : FileAttachment("data/alignments/Haloferax-volcanii/haloVolc1-mafft-kimura.json"),
+                "splits" : FileAttachment("data/alignments/Haloferax-volcanii/haloVolc1-mafft-kimura.splits.json")
+            }
+        ]
+    },
+    {
+        "species" : "Chlorobium chlorochromatii",
+        "files" : [
+            {
+                "alignment" : FileAttachment("data/alignments/Chlorobium-chlorochromatii/chloChlo-CAD3-clustal-omega.json"),
+                "splits" : FileAttachment("data/alignments/Chlorobium-chlorochromatii/chloChlo-CAD3-clustal-omega.splits.json")
+            },
+            {
+                "alignment" : FileAttachment("data/alignments/Chlorobium-chlorochromatii/chloChlo-CAD3-mafft.json"),
+                "splits" : FileAttachment("data/alignments/Chlorobium-chlorochromatii/chloChlo-CAD3-mafft.splits.json")
+            },
+            {
+                "alignment" : FileAttachment("data/alignments/Chlorobium-chlorochromatii/chloChlo-CAD3-mafft-kimura.json"),
+                "splits" : FileAttachment("data/alignments/Chlorobium-chlorochromatii/chloChlo-CAD3-mafft-kimura.splits.json")
+            }
+
+        ]
+    }
 ];
 ```
 
 ```js
-const display_file = view(
+const species_selection = view(
     Inputs.select(
         jsons, {
-            value: jsons.find( (t) => t.name  === "data/alignments/pyrFur2-manual.json" ),
-            format: (t) => t.name,
-            label: "File"
+            value: jsons.find( (t) => t.species === "Pyrococcus furiosus" ),
+            format: (t) => t.species,
+            label: "Species"
         }
     )
 );
 ```
 
 ```js
-const aln = display_file.json()
+const sel_species = species_selection.species;
 ```
 
-<!--
-TODO:
-    * Add markers for consensus at the bottom of the plot
-    * Add demarcations/highlights for different regions of the tRNA (D/T/Ac Loop, 5'/3' Ac Stem, ...)
--->
+```js
+const alignment_selection = view(
+    Inputs.select(
+        jsons.find( (t) => t.species === sel_species ).files, {
+            format: (d) => d.alignment.name,
+            label: "Alignment File"
+        }
+    )
+);
+```
+
+```js
+const aln = alignment_selection.alignment.json();
+const splits = alignment_selection.splits.json();
+```
 
 ```js
 function alignmentPlot(data, width={}) {
+    // Find maximum index in alignment
+    // Because Python code generates bases in a sequential order, we can break early
+    let max_idx = 0;
+    for (let i = 0; i < data.length; ++i) {
+        let d = data[i];
+        if (d.base_idx > max_idx) {
+            max_idx = d.base_idx;
+        }
+        else {
+            break;
+        }
+    }
+    // List of integers from 1 to max_idx to use as tick labels
+    console.log(max_idx);
+    let int_ticks = [];
+    for (let i = 5; i < max_idx - 1; i += 5) {
+        int_ticks.push(i);
+    }
+    int_ticks.push(max_idx);
+
     return Plot.plot({
         padding: 0,
-        width: 1900,
+        marginLeft: 100,
+        width: 2000,
         grid: true,
-        x: {axis: "top", label: ""},
+        x: {
+            axis: "top",
+            label: "",
+            ticks: int_ticks
+        },
         y: {label: ""},
         color: {
             domain: [0, 1, 2, 3, 4],
@@ -68,11 +155,9 @@ function alignmentPlot(data, width={}) {
                 fill: "black",
                 title: (d) => `${d.seq_label}: Base #${d.base_num}=${d.base_label}`
             }),
-            /*
-            Plot.ruleX([7], {
+            Plot.ruleX(splits, {
                 stroke: "red"
             })
-            */
         ]
     })
 }

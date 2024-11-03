@@ -98,7 +98,26 @@ const splits = alignment_selection.splits.json();
 ```
 
 ```js
-function alignmentPlot(data, width={}) {
+const isAligned = view(
+    Inputs.toggle({
+        label: "Align",
+        value: true
+    })
+);
+```
+
+```js
+const showSplitters = view(
+    Inputs.toggle({
+        label: "Show splitters",
+        value: false,
+        disabled: !isAligned
+    })
+);
+```
+
+```js
+function alignmentPlot(data, showSplitters, width={}) {
     // Find maximum index in alignment
     // Because Python code generates bases in a sequential order, we can break early
     let max_idx = 0;
@@ -112,17 +131,88 @@ function alignmentPlot(data, width={}) {
         }
     }
     // List of integers from 1 to max_idx to use as tick labels
-    console.log(max_idx);
     let int_ticks = [];
     for (let i = 5; i < max_idx - 1; i += 5) {
         int_ticks.push(i);
     }
     int_ticks.push(max_idx);
 
+    let marks = [
+        Plot.cell(data, {
+            x: "base_idx",
+            y: "seq_label",
+            sort: {
+                y: "data",
+                reduce: ([d]) => d.seq_idx
+            },
+            fill: "base_color"
+        }),
+        Plot.text(data, {
+            x: "base_idx",
+            y: "seq_label",
+            sort: {
+                y: "data",
+                reduce: ([d]) => d.seq_idx
+            },
+            text: "base_label",
+            fill: "black",
+            title: (d) => `${d.seq_label}: Base #${d.base_num}=${d.base_label}`
+        })
+    ];
+    if (showSplitters) {
+        marks.push(
+            Plot.ruleX(splits, {
+                stroke: "red"
+            })
+        );
+    }
+
     return Plot.plot({
         padding: 0,
         marginLeft: 100,
         width: 2000,
+        height: 1500,
+        grid: true,
+        x: {
+            axis: "top",
+            label: "",
+            ticks: int_ticks
+        },
+        y: {label: ""},
+        color: {
+            domain: [0, 1, 2, 3, 4],
+            range: ["#177E89", "#DB3A34", "#FFC857", "#BBDBB4", "#FF00FF"]
+        },
+        marks: marks
+    })
+}
+```
+
+```js
+function unalignedPlot(data, width={}) {
+    // Consensus is not meaningful for unaligned sequences
+    data = data.filter((d) => d.seq_label !== 'Consensus');
+    // Find maximum length of sequence
+    let max_num = 0;
+    for (let i = 0; i < data.length; ++i) {
+        let d = data[i];
+        if (d.base_num > max_num) {
+            max_num = d.base_num;
+        }
+        // Cannot break early anymore because diff sequences have diff lengths
+    }
+    // List of integers from 1 to max_idx to use as tick labels
+    let int_ticks = [];
+    for (let i = 5; i < max_num - 1; i += 5) {
+        int_ticks.push(i);
+    }
+    int_ticks.push(max_num);
+
+    return Plot.plot({
+        padding: 0,
+        marginLeft: 100,
+        width: 2000,
+        height: 1500,
         grid: true,
         x: {
             axis: "top",
@@ -136,7 +226,7 @@ function alignmentPlot(data, width={}) {
         },
         marks: [
             Plot.cell(data, {
-                x: "base_idx",
+                x: "base_num",
                 y: "seq_label",
                 sort: {
                     y: "data",
@@ -145,7 +235,7 @@ function alignmentPlot(data, width={}) {
                 fill: "base_color"
             }),
             Plot.text(data, {
-                x: "base_idx",
+                x: "base_num",
                 y: "seq_label",
                 sort: {
                     y: "data",
@@ -155,17 +245,17 @@ function alignmentPlot(data, width={}) {
                 fill: "black",
                 title: (d) => `${d.seq_label}: Base #${d.base_num}=${d.base_label}`
             }),
-            Plot.ruleX(splits, {
-                stroke: "red"
-            })
         ]
     })
 }
 ```
 
+```js
+const aln_filt = aln.filter((e) => e.seq_label === 'Consensus')
+```
+
 <div class="grid grid-cols-1">
-    <!-- Increase padding-left to 48 to accommodate y-axis labels -->
     <div class="card">
-        ${resize((width) => alignmentPlot(aln, {width}))}
+        ${resize((width) => isAligned ? alignmentPlot(aln, showSplitters, {width}) : unalignedPlot(aln, {width}))}
     </div>
 </div>

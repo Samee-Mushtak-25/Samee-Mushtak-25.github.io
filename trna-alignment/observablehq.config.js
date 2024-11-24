@@ -10,8 +10,6 @@ export default {
     {
       name: "Examples",
       pages: [
-        {name: "Dashboard", path: "/example-dashboard"},
-        {name: "Report", path: "/example-report"},
         {name: "Alignment Viewer", path: "/alignment-viewer"},
         {name: "Quality Reports", path: "/quality-reports"},
         {name: "D3 TEST", path: "/d3-test"}

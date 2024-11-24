@@ -2,54 +2,109 @@
 title: D3 TEST
 ---
 
-# D3 Test
+# Alignment Viewer
 
-```js
-function testPlot() {
-  // Declare the chart dimensions and margins.
-  const width = 1000;
-  const height = 400;
-  const marginTop = 20;
-  const marginRight = 20;
-  const marginBottom = 30;
-  const marginLeft = 40;
+```js echo
+function onclick_test() {
+  let aln_cell = aln.map(cell_transformer_aligned);
 
-  // Declare the x (horizontal position) scale.
-  const x = d3.scaleUtc()
-      .domain([new Date("2023-01-01"), new Date("2024-01-01")])
-      .range([marginLeft, width - marginRight]);
+  const width = 1050;
+  const height = 800;
+  const margin = { top: 20, bottom: 20, left: 100, right: 20 };
 
-  // Declare the y (vertical position) scale.
-  const y = d3.scaleLinear()
-      .domain([0, 100])
-      .range([height - marginBottom, marginTop]);
+  const container = htl.html`<div id="container">
+    <fieldset>
+      <div class="input-container">
+        <input type="checkbox" id="align-checkbox" name="align" checked/>
+        <label for="align-checkbox">Align</label>
+      </div>
+    </fieldset>
+    <div id="svg-container">
+    </div>
+  </div>`;
 
-  // Create the SVG container.
-  const svg = d3.create("svg")
-      .attr("width", width)
-      .attr("height", height);
+  const align_checkbox = d3
+    .select(container)
+    .select("input#align-checkbox");
 
-  // Add the x-axis.
-  svg.append("g")
-      .attr("transform", `translate(0,${height - marginBottom})`)
-      .call(d3.axisBottom(x));
+  const x_domain = Array.from(new Set(aln.map((d) => d.base_idx))).sort(d3.ascending);
+  const y_domain = Array.from(new Set(aln.map((d) => d.seq_label)));
+  
+  const x = d3
+    .scaleBand()
+    .domain(x_domain)
+    .range([0, width]);
 
-  // Add the y-axis.
-  svg.append("g")
-      .attr("transform", `translate(${marginLeft},0)`)
-      .call(d3.axisLeft(y));
+  const y = d3
+    .scaleBand()
+    .domain(y_domain)
+    .range([0, height]);
 
-  // Return the SVG element.
-  return svg.node();
+  const c = d3
+    .scaleOrdinal()
+    .domain([-1, 0, 1, 2, 3, 4])
+    .range(["none", "#177E89", "#DB3A34", "#FFC857", "#BBDBB4", "#FF00FF"]);
+
+  const svg = d3
+    .select(container)
+    .select("div#svg-container")
+    .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom);
+
+  const g = svg
+    .append("g")
+    .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+  g.append("g")
+    .call(
+      d3.axisLeft(y)
+        .tickSizeOuter(0)
+    );
+  
+  g.append("g")
+    .call(
+      d3.axisTop(x)
+        .tickValues(calculate_ticks(aln, 5))
+        .tickSizeOuter(0)
+    );
+  
+  const g_cell = g
+    .append("g")
+    .attr("id", "g-alignment-cells")
+    .selectAll("rect")
+    .data(aln_cell)
+    .join("rect")
+    .classed("alignment-cell", true)
+    .attr("x", (d) => x(d.idx))
+    .attr("y", (d) => y(d.seq_label))
+    .attr("width", x.bandwidth())
+    .attr("height", y.bandwidth())
+    .attr("fill", (d) => c(d.base_color));
+
+  align_checkbox
+    .on("click", (_,__) => {
+      aln_cell = align_checkbox.property("checked")
+        ? aln.map(cell_transformer_aligned)
+        : aln.map(cell_transformer_unaligned);
+      g_cell
+        .selectAll("rect.alignment-cell")
+        .data(aln_cell)
+        .join("rect")
+        .attr("x", (d) => x(d.idx))
+        .attr("y", (d) => y(d.seq_label))
+        .attr("width", x.bandwidth())
+        .attr("height", y.bandwidth())
+        .attr("fill", (d) => c(d.base_color));
+    });
+
+  return container;
 }
 ```
 
-
 <div class="grid grid-cols-1">
-    ${testPlot()}
+    ${onclick_test()}
 </div>
-
-# Alignment Viewer
 
 ```js echo
 function d3_alignment_viewer() {
@@ -104,6 +159,8 @@ function d3_alignment_viewer() {
     .append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom);
+    // .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+    // .attr("preserveAspectRatio", "xMinYMin meet");
 
   const g = svg
     .append("g")
@@ -126,9 +183,9 @@ function d3_alignment_viewer() {
     .append("g")
     .attr("id", "g-alignment-cells")
     .selectAll("rect")
-    .data(aln)
+    .data(aln.map(cell_transformer_aligned))
     .join("rect")
-    .attr("x", (d) => x(d.base_idx))
+    .attr("x", (d) => x(d.idx))
     .attr("y", (d) => y(d.seq_label))
     .attr("width", x.bandwidth())
     .attr("height", y.bandwidth())
@@ -160,9 +217,13 @@ function d3_alignment_viewer() {
       /*
       g_cell
         .selectAll("rect")
-        .data(aln, (d) => `${d.seq_label},${d.base_idx}`)
+        .data(
+          align_checkbox.property("checked")
+            ? aln.map(cell_transformer_aligned)
+            : aln.map(cell_transformer_unaligned),
+          (d) => `${d.seq_label},${d.num}`)
         .join("rect")
-        .attr("x", (d) => x(align_checkbox.property("checked") ? d.base_idx : d.base_num))
+        .attr("x", (d) => x(d.idx))
         .attr("y", (d) => y(d.seq_label))
         .attr("width", x.bandwidth())
         .attr("height", y.bandwidth())
@@ -178,8 +239,8 @@ function d3_alignment_viewer() {
         .join("line")
         .attr("x1", d => x(d+1))
         .attr("x2", d => x(d+1))
-        .attr("y1", y(y_domain[0]) - y.bandwidth())
-        .attr("y2", y(y_domain[y_domain.length-1]) + y.bandwidth())
+        .attr("y1", y(y_domain[0]) - 0.4 * y.bandwidth())
+        .attr("y2", y(y_domain[y_domain.length-1]) + 0.4 * y.bandwidth())
         .attr("stroke-width", 3)
         .attr("stroke", "blue");
     });
@@ -305,9 +366,32 @@ const aln = alignment_selection.alignment.json();
 const splits_pre = alignment_selection.splits.json();
 ```
 
+
 ```js
 let splits = [];
 for (let i = 0; i < splits_pre.length; ++i) {
     splits.push(splits_pre[i]-0.5);
+}
+```
+
+```js
+function cell_transformer_aligned(d) {
+  return {
+    "seq_label" : d.seq_label,
+    "num" : d.base_num,
+    "idx" : d.base_idx,
+    "base_color" : d.base_color
+  }
+}
+```
+
+```js
+function cell_transformer_unaligned(d) {
+  return {
+    "seq_label" : d.seq_label,
+    "num" : d.base_num,
+    "idx" : d.base_num,
+    "base_color" : d.base_color
+  }
 }
 ```

@@ -12,8 +12,10 @@ export default {
       pages: [
         {name: "Alignment Viewer", path: "/alignment-viewer"},
         {name: "Quality Reports", path: "/quality-reports"},
-        {name: "D3 TEST", path: "/d3-test"},
-        {name: "V-Loop Analysis", path: "/v-loop-analysis"}
+        // {name: "D3 TEST", path: "/d3-test"},
+        {name: "V-Loop Predictions", path: "/v-loop-predictions"},
+        {name: "V-Loop Analysis", path: "/v-loop-analysis"},
+        {name: "Sequence Logos", path: "/sequence-logos"}
       ]
     }
   ],

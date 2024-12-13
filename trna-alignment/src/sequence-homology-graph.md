@@ -4,6 +4,7 @@ title: Sequence Homology Network
 
 # Sequence Homology Network
 
+Code for this diagram adapted from [Force-directed graph by Mike Bostock](https://observablehq.com/@d3/force-directed-graph/2).
 
 ```js
 function graph_svg() {
@@ -130,7 +131,7 @@ function graph_svg() {
     ${graph_svg()}
 </div>
 
-Hover over a node or edge to see more details. The color of a node represents the length of the corresponding sequence, and the size of a node represents its prevalence among the archaeal sequences of GtRNAdb. The color of an edge corresponds to the class of genetic mutation that describes the relationship between two connected sequences. Pink edges represent "adhoc" mutations (non-standard terminology), which are three point mutations with no obvious biochemical interpretation.
+Hover over a node or edge to see more details. Drag a node to move it around. The color of a node represents the length of the corresponding sequence, and the size of a node represents its prevalence among the archaeal sequences of GtRNAdb. The color of an edge corresponds to the class of genetic mutation that describes the relationship between two connected sequences. Pink edges represent "adhoc" mutations (non-standard terminology), which are three point mutations with no obvious biochemical interpretation.
 
 This is a network depicting genetic relationships between the 150 distinct tRNALeu V arm sequences which we extracted from GtRNAdb. 142 out of the 150 sequences are in the main connected component. Within this connected component, we can observe four clusters. In the center, there are two clusters consisting predominantly of 14 nucleotide sequences, which we call Cluster 14A and Cluster 14B. Cluster 14A can be identified by the representative sequence UCCCGUAGGGUUC, and Cluster 14B can be identified by the representative sequence UGGCGUAGGCCUGC. Cluster 14A appears to have a higher density of sequences related by penultimate transition mutations, while Cluster 14B has a higher density of sequences related by penultimate transversion mutations. These two clusters are connected by paired mutations in the V arm stem.
 
